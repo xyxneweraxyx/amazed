@@ -89,9 +89,7 @@ static size_t process_end(main_t *main,
 static size_t process_start(main_t *main,
     char buff[LINE_BUFF_SIZE], char *saveptr)
 {
-    printf("%s\n", buff);
     if (!str_cmp(buff, "##start")) {
-        printf("found start\n");
         if (main->start->name)
             return (size_t)EXIT_FAIL;
         if (parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL ||
@@ -100,7 +98,6 @@ static size_t process_start(main_t *main,
             parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL ||
             write_room_nums(main, true) == (size_t)EXIT_FAIL)
             return (size_t)EXIT_FAIL;
-        printf("AAAAAAAAAAAAAAAaa %p\n", main->start->name);
     }
     if (process_end(main, buff, saveptr) == (size_t)EXIT_FAIL)
         return (size_t)EXIT_FAIL;
@@ -145,7 +142,6 @@ size_t parse_rooms(main_t *main, char buff[LINE_BUFF_SIZE],
     write(STDOUT_FILENO, "#rooms\n", 7);
     while (result == (size_t)EXIT_SUCC) {
         result = parse_stdin_line(LINE_BUFF_SIZE, buff);
-        printf("buff is %s\n", buff);
         if (result || process_start(main, buff, saveptr))
             return (size_t)EXIT_FAIL;
         if (buff[0] == '#')
@@ -157,9 +153,8 @@ size_t parse_rooms(main_t *main, char buff[LINE_BUFF_SIZE],
             break;
         }
         if (is_room_line_correct(buff) == (size_t)EXIT_FAIL)
-            return (size_t)EXIT_FAIL;
+            break;
     }
-    printf("%p %p\n", main->start->name, main->end->name);
     return (main->start->name && main->end->name) ?
         (size_t)EXIT_SUCC : (size_t)EXIT_FAIL;
 }
