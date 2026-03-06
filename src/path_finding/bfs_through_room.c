@@ -42,17 +42,23 @@ room_t *walkthrough_rooms(main_t *main)
 
 char *build_paths(room_t *end, main_t *main)
 {
+    room_t *nodes[1024];
+    int count = 0;
     room_t *tmp = end;
     char *path = c_alloc(sizeof(char), 1024, main->alloc);
 
     if (!path)
         return NULL;
     while (tmp) {
-        my_strcat(path, tmp->name);
+        nodes[count++] = tmp;
         if (tmp == main->start)
             break;
-        my_strcat(path, ".");
         tmp = tmp->prec;
+    }
+    for (int i = count - 1; i >= 0; i--) {
+        my_strcat(path, nodes[i]->name);
+        if (i > 0)
+            my_strcat(path, ".");
     }
     main->shortest_path = path;
     return path;

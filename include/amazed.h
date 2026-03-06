@@ -99,6 +99,11 @@ typedef struct main {
     size_t end_num;
 } main_t;
 
+typedef struct {
+    char data[256][LINE_BUFF_SIZE];
+    int count;
+} tunnels_t;
+
 /// FUNCTIONS
 queue_t *create_queue(main_t *main, int size, queue_t *queue);
 void remove_link(room_t *a, room_t *b);

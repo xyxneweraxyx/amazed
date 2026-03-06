@@ -77,26 +77,80 @@ static size_t add_neighbor(main_t *main, char room[LINE_BUFF_SIZE],
     return (size_t)EXIT_SUCC;
 }
 
-size_t parse_links(main_t *main,
-    char buff[LINE_BUFF_SIZE], size_t result)
+// Returns -1 = duplicate (fail), 0 = new, 1 = reverse (skip)
+static int check_tunnel_keys(char key[LINE_BUFF_SIZE],
+    char rkey[LINE_BUFF_SIZE], tunnels_t *tunnels)
+{
+    for (int i = 0; i < tunnels->count; i++) {
+        if (!str_cmp(tunnels->data[i], key))
+            return -1;
+        if (!str_cmp(tunnels->data[i], rkey))
+            return 1;
+    }
+    return 0;
+}
+
+static size_t validate_tunnel(char buff[LINE_BUFF_SIZE],
+    char name1[LINE_BUFF_SIZE], char name2[LINE_BUFF_SIZE])
+{
+    if (is_line_correct(buff) == (size_t)EXIT_FAIL ||
+        get_names(buff, name1, name2) == (size_t)EXIT_FAIL)
+        return (size_t)EXIT_FAIL;
+    if (!str_cmp(name1, name2))
+        return (size_t)EXIT_FAIL;
+    return (size_t)EXIT_SUCC;
+}
+
+static size_t add_tunnel(main_t *main, char name1[LINE_BUFF_SIZE],
+    char name2[LINE_BUFF_SIZE], tunnels_t *tunnels)
+{
+    char key[LINE_BUFF_SIZE] = {0};
+    char rkey[LINE_BUFF_SIZE] = {0};
+    int check = 0;
+
+    str_cat(key, 3, name1, "-", name2);
+    str_cat(rkey, 3, name2, "-", name1);
+    check = check_tunnel_keys(key, rkey, tunnels);
+    if (check == -1)
+        return (size_t)EXIT_FAIL;
+    if (check == 0) {
+        if (add_neighbor(main, name1, name2) == (size_t)EXIT_FAIL ||
+            add_neighbor(main, name2, name1) == (size_t)EXIT_FAIL)
+            return (size_t)EXIT_FAIL;
+        str_cpy(key, tunnels->data[tunnels->count++]);
+    }
+    return (size_t)EXIT_SUCC;
+}
+
+static size_t process_tunnel(main_t *main, char buff[LINE_BUFF_SIZE],
+    tunnels_t *tunnels)
 {
     char name1[LINE_BUFF_SIZE] = {0};
     char name2[LINE_BUFF_SIZE] = {0};
 
-    result = (size_t)(EXIT_SUCC);
+    if (validate_tunnel(buff, name1, name2) == (size_t)EXIT_FAIL)
+        return (size_t)EXIT_FAIL;
+    if (add_tunnel(main, name1, name2, tunnels) == (size_t)EXIT_FAIL)
+        return (size_t)EXIT_FAIL;
+    write(STDOUT_FILENO, buff, str_len(buff));
+    write(STDOUT_FILENO, "\n", 1);
+    return (size_t)EXIT_SUCC;
+}
+
+size_t parse_links(main_t *main,
+    char buff[LINE_BUFF_SIZE], size_t result)
+{
+    tunnels_t tunnels = {0};
+
+    result = (size_t)EXIT_SUCC;
     write(STDOUT_FILENO, "#tunnels\n", 9);
     while (result == (size_t)EXIT_SUCC) {
         if (buff[0] == '#') {
             result = parse_stdin_line(LINE_BUFF_SIZE, buff);
             continue;
         }
-        if (is_line_correct(buff) == (size_t)EXIT_FAIL ||
-            get_names(buff, name1, name2) == (size_t)EXIT_FAIL ||
-            add_neighbor(main, name1, name2) == (size_t)EXIT_FAIL ||
-            add_neighbor(main, name2, name1) == (size_t)EXIT_FAIL)
+        if (process_tunnel(main, buff, &tunnels) == (size_t)EXIT_FAIL)
             return (size_t)EXIT_FAIL;
-        write(STDOUT_FILENO, buff, str_len(buff));
-        write(STDOUT_FILENO, "\n", 1);
         result = parse_stdin_line(LINE_BUFF_SIZE, buff);
     }
     return (size_t)EXIT_SUCC;

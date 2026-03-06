@@ -88,7 +88,6 @@ static void print_moves(main_t *main, char **path_strs, int path_count)
     int p = 0;
 
     while (p < path_count) {
-        str_rev(path_strs[p]);
         turn.lens[p] = count_dots(path_strs[p]);
         turn.all_rooms[p] = build_rooms(main, path_strs[p], turn.lens[p]);
         p++;

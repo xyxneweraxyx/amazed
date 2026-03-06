@@ -44,20 +44,24 @@ static room_t *write_room(main_t *main, char buff[LINE_BUFF_SIZE],
 {
     ssize_t result = 0;
     size_t name_len = 0;
+    char *ptr = NULL;
 
+    (void)saveptr;
     if (!room)
         return NULL;
     room->neighboors = NULL;
     for (; buff[name_len] && buff[name_len] != ' '; name_len++);
+    if (name_len == 0)
+        return NULL;
     room->name = c_alloc(sizeof(char), name_len + 1, main->alloc);
     str_ncpy(buff, room->name, name_len);
-    if (!saveptr) {
-        c_free(room->name, main->alloc);
+    ptr = buff + name_len;
+    result = a_to_i(ptr, &ptr);
+    if (!ptr)
         return NULL;
-    }
-    room->x = result;
-    result = a_to_i(saveptr, &saveptr);
-    room->y = result;
+    room->x = (size_t)result;
+    result = a_to_i(ptr, &ptr);
+    room->y = (size_t)result;
     return room;
 }
 
@@ -70,37 +74,65 @@ static size_t write_room_nums(main_t *main, bool start)
     return (size_t)EXIT_SUCC;
 }
 
-static size_t process_end(main_t *main,
-    char buff[LINE_BUFF_SIZE], char *saveptr)
+static size_t read_skip_comments(char buff[LINE_BUFF_SIZE])
 {
-    if (!str_cmp(buff, "##end")) {
-        if (main->end->name)
+    while (1) {
+        if (parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL)
             return (size_t)EXIT_FAIL;
-        if (parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL ||
-            is_room_line_correct(buff) == (size_t)EXIT_FAIL ||
-            !write_room(main, buff, saveptr, main->end) ||
-            parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL ||
-            write_room_nums(main, false) == (size_t)EXIT_FAIL)
+        if (!(buff[0] == '#' && buff[1] != '#'))
+            return (size_t)EXIT_SUCC;
+    }
+}
+
+static size_t check_duplicate(main_t *main, room_t *new_room)
+{
+    size_t i = 0;
+
+    for (; i < main->room_amount - 1; i++) {
+        if (!str_cmp(main->rooms[i].name, new_room->name))
+            return (size_t)EXIT_FAIL;
+        if (main->rooms[i].x == new_room->x &&
+            main->rooms[i].y == new_room->y)
             return (size_t)EXIT_FAIL;
     }
+    if (main->start->name && !str_cmp(main->start->name, new_room->name))
+        return (size_t)EXIT_FAIL;
+    if (main->start->name && main->start->x == new_room->x &&
+        main->start->y == new_room->y)
+        return (size_t)EXIT_FAIL;
+    if (main->end->name && !str_cmp(main->end->name, new_room->name))
+        return (size_t)EXIT_FAIL;
+    if (main->end->name && main->end->x == new_room->x &&
+        main->end->y == new_room->y)
+        return (size_t)EXIT_FAIL;
+    return (size_t)EXIT_SUCC;
+}
+
+static size_t parse_tagged_room(main_t *main,
+    char buff[LINE_BUFF_SIZE], char *saveptr, room_t *room, bool is_start)
+{
+    const char *same_tag = is_start ? "##start" : "##end";
+
+    if (room->name)
+        return (size_t)EXIT_FAIL;
+    if (read_skip_comments(buff) == (size_t)EXIT_FAIL ||
+        is_room_line_correct(buff) == (size_t)EXIT_FAIL ||
+        !write_room(main, buff, saveptr, room) ||
+        read_skip_comments(buff) == (size_t)EXIT_FAIL ||
+        write_room_nums(main, is_start) == (size_t)EXIT_FAIL)
+        return (size_t)EXIT_FAIL;
+    if (!str_cmp(buff, same_tag))
+        return (size_t)EXIT_FAIL;
     return (size_t)EXIT_SUCC;
 }
 
 static size_t process_start(main_t *main,
     char buff[LINE_BUFF_SIZE], char *saveptr)
 {
-    if (!str_cmp(buff, "##start")) {
-        if (main->start->name)
-            return (size_t)EXIT_FAIL;
-        if (parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL ||
-            is_room_line_correct(buff) == (size_t)EXIT_FAIL ||
-            !write_room(main, buff, saveptr, main->start) ||
-            parse_stdin_line(LINE_BUFF_SIZE, buff) == (size_t)EXIT_FAIL ||
-            write_room_nums(main, true) == (size_t)EXIT_FAIL)
-            return (size_t)EXIT_FAIL;
-    }
-    if (process_end(main, buff, saveptr) == (size_t)EXIT_FAIL)
-        return (size_t)EXIT_FAIL;
+    if (!str_cmp(buff, "##start"))
+        return parse_tagged_room(main, buff, saveptr, main->start, true);
+    if (!str_cmp(buff, "##end"))
+        return parse_tagged_room(main, buff, saveptr, main->end, false);
     return (size_t)EXIT_SUCC;
 }
 
@@ -134,26 +166,58 @@ static void realloc_add(main_t *main, bool add)
     }
 }
 
+static size_t try_add_room(main_t *main, char buff[LINE_BUFF_SIZE],
+    char *saveptr, bool *done)
+{
+    realloc_add(main, true);
+    if (!write_room(main, buff, saveptr,
+            &(main->rooms[main->room_amount - 1])) ||
+        is_room_line_correct(buff) == (size_t)EXIT_FAIL) {
+        realloc_add(main, false);
+        *done = true;
+        return (size_t)EXIT_SUCC;
+    }
+    if (check_duplicate(main, &(main->rooms[main->room_amount - 1]))
+        == (size_t)EXIT_FAIL)
+        return (size_t)EXIT_FAIL;
+    return (size_t)EXIT_SUCC;
+}
+
+static size_t handle_buff(main_t *main, char buff[LINE_BUFF_SIZE],
+    char *saveptr, bool *buff_ready, bool *done)
+{
+    if (buff[0] == '#' && buff[1] != '#')
+        return (size_t)EXIT_SUCC;
+    if (buff[0] == '#' && buff[1] == '#' &&
+        str_cmp(buff, "##start") && str_cmp(buff, "##end"))
+        return (size_t)EXIT_SUCC;
+    if (!str_cmp(buff, "##start") || !str_cmp(buff, "##end")) {
+        if (process_start(main, buff, saveptr) == (size_t)EXIT_FAIL)
+            return (size_t)EXIT_FAIL;
+        *buff_ready = true;
+        return (size_t)EXIT_SUCC;
+    }
+    return try_add_room(main, buff, saveptr, done);
+}
+
 size_t parse_rooms(main_t *main, char buff[LINE_BUFF_SIZE],
     char *saveptr, size_t result)
 {
+    bool buff_ready = false;
+    bool done = false;
+
+    (void)result;
     if (alloc_ini(main) == (size_t)EXIT_FAIL)
         return (size_t)EXIT_FAIL;
     write(STDOUT_FILENO, "#rooms\n", 7);
-    while (result == (size_t)EXIT_SUCC) {
-        result = parse_stdin_line(LINE_BUFF_SIZE, buff);
-        if (result || process_start(main, buff, saveptr))
+    while (!done) {
+        if (!buff_ready &&
+            parse_stdin_line(LINE_BUFF_SIZE, buff) != (size_t)EXIT_SUCC)
+            break;
+        buff_ready = false;
+        if (handle_buff(main, buff, saveptr, &buff_ready, &done)
+            == (size_t)EXIT_FAIL)
             return (size_t)EXIT_FAIL;
-        if (buff[0] == '#')
-            continue;
-        realloc_add(main, true);
-        if (!write_room(main, buff, saveptr,
-                &(main->rooms[main->room_amount - 1]))) {
-            realloc_add(main, false);
-            break;
-        }
-        if (is_room_line_correct(buff) == (size_t)EXIT_FAIL)
-            break;
     }
     return (main->start->name && main->end->name) ?
         (size_t)EXIT_SUCC : (size_t)EXIT_FAIL;

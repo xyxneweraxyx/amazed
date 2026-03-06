@@ -47,6 +47,20 @@ static void write_robots(char buff[LINE_BUFF_SIZE])
     write(STDOUT_FILENO, "\n", 1);
 }
 
+static size_t validate_robot_line(char buff[LINE_BUFF_SIZE])
+{
+    int i = 0;
+
+    for (; buff[i] == ' ' || buff[i] == '\t'; i++);
+    if (buff[i] < '1' || buff[i] > '9')
+        return (size_t)EXIT_FAIL;
+    for (i++; buff[i] && buff[i] != ' ' && buff[i] != '\n'; i++) {
+        if (buff[i] < '0' || buff[i] > '9')
+            return (size_t)EXIT_FAIL;
+    }
+    return (size_t)EXIT_SUCC;
+}
+
 size_t parser(main_t *main)
 {
     char buff[LINE_BUFF_SIZE] = {0};
@@ -57,7 +71,8 @@ size_t parser(main_t *main)
     alloc_rooms(main);
     parse_stdin_line(LINE_BUFF_SIZE, buff);
     result = a_to_i(buff, &saveptr);
-    if (!saveptr || result < 0)
+    if (!saveptr || result < 0 ||
+        validate_robot_line(buff) == (size_t)EXIT_FAIL)
         return (size_t)return_error(main, EXIT_FAIL, ERR_RBTAMT, false);
     write_robots(buff);
     main->robot_amount = (size_t)result;
