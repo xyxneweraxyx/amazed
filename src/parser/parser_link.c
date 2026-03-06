@@ -117,7 +117,8 @@ static size_t add_tunnel(main_t *main, char name1[LINE_BUFF_SIZE],
         if (add_neighbor(main, name1, name2) == (size_t)EXIT_FAIL ||
             add_neighbor(main, name2, name1) == (size_t)EXIT_FAIL)
             return (size_t)EXIT_FAIL;
-        str_cpy(key, tunnels->data[tunnels->count++]);
+        str_cpy(key, tunnels->data[tunnels->count]);
+        tunnels->count++;
     }
     return (size_t)EXIT_SUCC;
 }

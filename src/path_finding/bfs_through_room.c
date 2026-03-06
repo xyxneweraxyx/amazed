@@ -50,7 +50,8 @@ char *build_paths(room_t *end, main_t *main)
     if (!path)
         return NULL;
     while (tmp) {
-        nodes[count++] = tmp;
+        nodes[count] = tmp;
+        count++;
         if (tmp == main->start)
             break;
         tmp = tmp->prec;

@@ -6,7 +6,6 @@
 */
 
 #include "./../../include/amazed.h"
-#include <stddef.h>
 
 static size_t return_room_line(size_t num_amount, char buff[LINE_BUFF_SIZE])
 {
@@ -17,7 +16,7 @@ static size_t return_room_line(size_t num_amount, char buff[LINE_BUFF_SIZE])
     return (size_t)EXIT_SUCC;
 }
 
-static size_t is_room_line_correct(char buff[LINE_BUFF_SIZE])
+size_t is_room_line_correct(char buff[LINE_BUFF_SIZE])
 {
     int i = 0;
     size_t num_amount = 0;
@@ -39,14 +38,13 @@ static size_t is_room_line_correct(char buff[LINE_BUFF_SIZE])
     return return_room_line(num_amount, buff);
 }
 
-static room_t *write_room(main_t *main, char buff[LINE_BUFF_SIZE],
+room_t *write_room(main_t *main, char buff[LINE_BUFF_SIZE],
     char *saveptr, room_t *room)
 {
     ssize_t result = 0;
     size_t name_len = 0;
     char *ptr = NULL;
 
-    (void)saveptr;
     if (!room)
         return NULL;
     room->neighboors = NULL;
@@ -84,7 +82,7 @@ static size_t read_skip_comments(char buff[LINE_BUFF_SIZE])
     }
 }
 
-static size_t check_duplicate(main_t *main, room_t *new_room)
+size_t check_duplicate(main_t *main, room_t *new_room)
 {
     size_t i = 0;
 
@@ -126,7 +124,7 @@ static size_t parse_tagged_room(main_t *main,
     return (size_t)EXIT_SUCC;
 }
 
-static size_t process_start(main_t *main,
+size_t process_start(main_t *main,
     char buff[LINE_BUFF_SIZE], char *saveptr)
 {
     if (!str_cmp(buff, "##start"))
@@ -149,55 +147,6 @@ static size_t alloc_ini(main_t *main)
         return (size_t)EXIT_FAIL;
     main->room_amount = 0;
     return (size_t)EXIT_SUCC;
-}
-
-static void realloc_add(main_t *main, bool add)
-{
-    if (add) {
-        main->room_amount += 1;
-        main->rooms = c_realloc(main->alloc, main->rooms,
-            &((c_realloc_t){main->room_amount,
-                    main->room_amount + 1}), sizeof(room_t));
-    } else {
-        main->rooms = c_realloc(main->alloc, main->rooms,
-            &((c_realloc_t){main->room_amount + 3, main->room_amount}),
-            sizeof(room_t));
-        main->room_amount -= 1;
-    }
-}
-
-static size_t try_add_room(main_t *main, char buff[LINE_BUFF_SIZE],
-    char *saveptr, bool *done)
-{
-    realloc_add(main, true);
-    if (!write_room(main, buff, saveptr,
-            &(main->rooms[main->room_amount - 1])) ||
-        is_room_line_correct(buff) == (size_t)EXIT_FAIL) {
-        realloc_add(main, false);
-        *done = true;
-        return (size_t)EXIT_SUCC;
-    }
-    if (check_duplicate(main, &(main->rooms[main->room_amount - 1]))
-        == (size_t)EXIT_FAIL)
-        return (size_t)EXIT_FAIL;
-    return (size_t)EXIT_SUCC;
-}
-
-static size_t handle_buff(main_t *main, char buff[LINE_BUFF_SIZE],
-    char *saveptr, bool *buff_ready, bool *done)
-{
-    if (buff[0] == '#' && buff[1] != '#')
-        return (size_t)EXIT_SUCC;
-    if (buff[0] == '#' && buff[1] == '#' &&
-        str_cmp(buff, "##start") && str_cmp(buff, "##end"))
-        return (size_t)EXIT_SUCC;
-    if (!str_cmp(buff, "##start") || !str_cmp(buff, "##end")) {
-        if (process_start(main, buff, saveptr) == (size_t)EXIT_FAIL)
-            return (size_t)EXIT_FAIL;
-        *buff_ready = true;
-        return (size_t)EXIT_SUCC;
-    }
-    return try_add_room(main, buff, saveptr, done);
 }
 
 size_t parse_rooms(main_t *main, char buff[LINE_BUFF_SIZE],

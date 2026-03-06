@@ -12,6 +12,7 @@
     #include <unistd.h>
     #include <stdio.h>
     #include <fcntl.h>
+    #include <stddef.h>
     #include "../lib/c_alloc/c_alloc.h"
     #include "../lib/parsing/parsing.h"
 
@@ -117,6 +118,17 @@ room_t *bfs_find_path(main_t *main);
 room_t *walkthrough_rooms(main_t *main);
 char *build_paths(room_t *end, main_t *main);
 size_t write_print_data(main_t *main, char buff[LINE_BUFF_SIZE]);
+void realloc_add(main_t *main, bool add);
+size_t try_add_room(main_t *main, char buff[LINE_BUFF_SIZE],
+    char *saveptr, bool *done);
+size_t handle_buff(main_t *main, char buff[LINE_BUFF_SIZE],
+    char *saveptr, bool *buff_ready, bool *done);
+room_t *write_room(main_t *main, char buff[LINE_BUFF_SIZE],
+    char *saveptr, room_t *room);
+size_t is_room_line_correct(char buff[LINE_BUFF_SIZE]);
+size_t check_duplicate(main_t *main, room_t *new_room);
+size_t process_start(main_t *main,
+    char buff[LINE_BUFF_SIZE], char *saveptr);
 
 // MAIN FUNCTIONS
 int return_error(main_t *main, int return_code,
