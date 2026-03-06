@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-ssize_t a_to_i(char *restrict str, char **saveptr)
+ssize_t a_to_i(char *str, char **saveptr)
 {
     int i = 0;
     ssize_t result = 0;

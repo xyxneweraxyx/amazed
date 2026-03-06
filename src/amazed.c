@@ -6,9 +6,10 @@
 */
 
 #include "./../include/amazed.h"
+#include <stdio.h>
 
-int return_error(main_t *restrict main, int return_code,
-    const char *restrict error_msg, bool delete_main)
+int return_error(main_t *main, int return_code,
+    const char *error_msg, bool delete_main)
 {
     write(STDERR_FILENO, error_msg, str_len(error_msg));
     if (delete_main && main)
@@ -33,6 +34,7 @@ int main(int argc, char **argv)
     main->alloc = alloc;
     if (parser(main) == (size_t)EXIT_FAIL)
         return return_error(main, EXIT_FAIL, ERR_PARSER, true);
+    display(main, build_multiple_paths(main), 2);
     c_delete(main->alloc, true);
-    return 0;
+    return EXIT_SUCC;
 }

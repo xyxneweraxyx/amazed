@@ -5,7 +5,7 @@
 ** str_ncpy
 */
 
-void str_ncpy(const char *restrict src, char *restrict dest, const int n)
+void str_ncpy(const char *src, char *dest, const int n)
 {
     int i = 0;
 

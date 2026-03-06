@@ -12,11 +12,11 @@ static size_t is_line_correct(char buff[LINE_BUFF_SIZE])
     size_t hyphen_amount = 0;
 
     for (int i = 0; buff[i]; i++) {
+        if (buff[i] == '#')
+            break;
         if (buff[i] == '-')
             hyphen_amount++;
         if (buff[i] == '-' && !buff[i + 1])
-            return (size_t)EXIT_FAIL;
-        if (buff[i] == ' ')
             return (size_t)EXIT_FAIL;
     }
     return (hyphen_amount == 1) ? (size_t)EXIT_SUCC : (size_t)EXIT_FAIL;
@@ -35,12 +35,13 @@ static size_t get_names(char buff[LINE_BUFF_SIZE], char name1[LINE_BUFF_SIZE],
     str_ncpy(buff, name1, chars_copy);
     buff += chars_copy + 1;
     chars_copy = 0;
-    for (; buff[chars_copy]; chars_copy++);
+    for (; buff[chars_copy] && buff[chars_copy] != '#'
+        && buff[chars_copy] != ' '; chars_copy++);
     str_ncpy(buff, name2, chars_copy);
     return (size_t)EXIT_SUCC;
 }
 
-static room_t *find_room(main_t *restrict main, char name[LINE_BUFF_SIZE])
+static room_t *find_room(main_t *main, char name[LINE_BUFF_SIZE])
 {
     size_t i = 0;
 
@@ -55,7 +56,7 @@ static room_t *find_room(main_t *restrict main, char name[LINE_BUFF_SIZE])
     return NULL;
 }
 
-static size_t add_neighbor(main_t *restrict main, char room[LINE_BUFF_SIZE],
+static size_t add_neighbor(main_t *main, char room[LINE_BUFF_SIZE],
     char neighbor[LINE_BUFF_SIZE])
 {
     room_t *room_a = find_room(main, room);
@@ -63,25 +64,27 @@ static size_t add_neighbor(main_t *restrict main, char room[LINE_BUFF_SIZE],
 
     if (!room_a || !neighbor_a)
         return (size_t)EXIT_FAIL;
-    for (size_t i = 0; i < room_a->ngh_nbr; i++) {
-        if (room_a->neighbors[i] == neighbor_a)
+    for (size_t i = 0; i < (size_t)room_a->ngh_nbr; i++) {
+        if (room_a->neighboors[i] == neighbor_a)
             return return_error(main, EXIT_FAIL, ERR_NGH, false);
     }
-    room_a->neighbors = c_realloc(main->alloc, room_a->neighbors,
-        &(c_realloc_t){room_a->ngh_nbr, room_a->ngh_nbr + 1},
+    room_a->neighboors = c_realloc(main->alloc, room_a->neighboors,
+        &(c_realloc_t){room_a->ngh_nbr, room_a->ngh_nbr + 2},
         sizeof(room_t *));
+    room_a->neighboors[room_a->ngh_nbr] = neighbor_a;
+    room_a->neighboors[room_a->ngh_nbr + 1] = NULL;
     room_a->ngh_nbr += 1;
-    room_a->neighbors[room_a->ngh_nbr - 1] = neighbor_a;
     return (size_t)EXIT_SUCC;
 }
 
-size_t parse_links(main_t *restrict main,
+size_t parse_links(main_t *main,
     char buff[LINE_BUFF_SIZE], size_t result)
 {
     char name1[LINE_BUFF_SIZE] = {0};
     char name2[LINE_BUFF_SIZE] = {0};
 
     result = (size_t)(EXIT_SUCC);
+    write(STDOUT_FILENO, "#tunnels\n", 9);
     while (result == (size_t)EXIT_SUCC) {
         if (buff[0] == '#') {
             result = parse_stdin_line(LINE_BUFF_SIZE, buff);
@@ -92,6 +95,8 @@ size_t parse_links(main_t *restrict main,
             add_neighbor(main, name1, name2) == (size_t)EXIT_FAIL ||
             add_neighbor(main, name2, name1) == (size_t)EXIT_FAIL)
             return (size_t)EXIT_FAIL;
+        write(STDOUT_FILENO, buff, str_len(buff));
+        write(STDOUT_FILENO, "\n", 1);
         result = parse_stdin_line(LINE_BUFF_SIZE, buff);
     }
     return (size_t)EXIT_SUCC;

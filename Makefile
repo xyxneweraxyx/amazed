@@ -1,7 +1,7 @@
 # Compilation
 TARGET := amazed
 CC := clang
-FLAGS := -Wall -Wextra -g3 -O2
+FLAGS := -Wall -Wextra -g3 -O2 -std=c99
 
 # Sources
 SRC := $(shell find . -name '*.c')
@@ -32,3 +32,6 @@ print_src:
 
 epiclang_all:
 	epiclang $(SRC) $(HDR)
+
+nm:
+	nm $(OBJ)

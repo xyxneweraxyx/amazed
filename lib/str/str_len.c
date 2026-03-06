@@ -5,7 +5,7 @@
 ** str_len
 */
 
-int str_len(const char *restrict str)
+int str_len(const char *str)
 {
     int i = 0;
 

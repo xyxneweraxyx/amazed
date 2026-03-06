@@ -38,21 +38,15 @@ void c_delete(c_alloc_t *arr, bool del_addresses)
     if (!arr)
         return;
     if (!arr->addresses) {
-        if (arr->debug)
-            printf("DELETE: %p - Success (No addresses found)\n", arr);
         free(arr);
         return;
     }
     for (uint16_t i = 0; del_addresses && i < arr->array_len; i++) {
         if (!arr->addresses[i])
             continue;
-        if (arr->debug)
-            printf("DELETE - %p inside of address array\n", arr->addresses[i]);
         if (arr->addresses[i])
             free(arr->addresses[i]);
     }
-    if (arr->debug)
-        printf("DELETE - %p - Success\n", arr);
     free(arr->addresses);
     free(arr);
 }

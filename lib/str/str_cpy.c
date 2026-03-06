@@ -5,7 +5,7 @@
 ** str_cpy
 */
 
-void str_cpy(const char *restrict src, char *restrict dest)
+void str_cpy(const char *src, char *dest)
 {
     int i = 0;
 

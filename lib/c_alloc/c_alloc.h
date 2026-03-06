@@ -63,14 +63,14 @@ Reallocates an array "arr" to "size" and initializes extra space to be empty.
 Only works with allocations done using c_alloc.
 Returns the new array on success, or NULL on fail.
 */
-void *c_realloc(c_alloc_t *c_arr, void *restrict __arr,
-    const c_realloc_t *restrict sizes, const int blk_size);
+void *c_realloc(c_alloc_t *c_arr, void *__arr,
+    const c_realloc_t *sizes, const int blk_size);
 
 /*
 When allocated using c_alloc, sserts if a pointer exists, or not.
 Returns the pointer's position if the pointer was found, CALLOC_FAIL otherwise.
 */
-size_t c_assert_pointer(const void *restrict __p, c_alloc_t *arr);
+size_t c_assert_pointer(const void *__p, c_alloc_t *arr);
 
 /*
 Prints the array of addresses.

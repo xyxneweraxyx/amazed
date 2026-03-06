@@ -6,8 +6,9 @@
 */
 
 #include <stdarg.h>
+#include "../../include/amazed.h"
 
-void str_cat(char *restrict dest, const int n, ...)
+void str_cat(char *dest, const int n, ...)
 {
     va_list args;
     int pos = 0;
@@ -24,4 +25,17 @@ void str_cat(char *restrict dest, const int n, ...)
     }
     dest[pos] = 0;
     va_end(args);
+}
+
+char *my_strcat(char *dest, const char *src)
+{
+    while (*dest != '\0')
+        dest++;
+    while (*src != '\0'){
+        *dest = *src;
+        dest++;
+        src++;
+    }
+    *dest = '\0';
+    return dest;
 }

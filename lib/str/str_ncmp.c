@@ -5,7 +5,7 @@
 ** str_cmp
 */
 
-int str_ncmp(const char *restrict str1, const char *restrict str2, const int n)
+int str_ncmp(const char *str1, const char *str2, const int n)
 {
     int i = 0;
 
